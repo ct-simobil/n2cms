@@ -191,7 +191,7 @@ namespace N2.Persistence.NH
                     Properties[NHibernate.Cfg.Environment.Dialect] = typeof(NHibernate.Dialect.DB2Dialect).AssemblyQualifiedName;
                     break;
                 case DatabaseFlavour.Oracle9i:
-                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.OracleClientDriver).AssemblyQualifiedName;
+                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(CustomOracleClientDriver).AssemblyQualifiedName;
                     Properties[NHibernate.Cfg.Environment.Dialect] = typeof(NHibernate.Dialect.Oracle9iDialect).AssemblyQualifiedName;
                     break;
                 case DatabaseFlavour.Oracle:
@@ -199,7 +199,7 @@ namespace N2.Persistence.NH
                     // if you have OracleOdpDriver installed
                     // use the following line instead of the the later one (NOTICE both apply to the same property)
                     // Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.OracleDataClientDriver).AssemblyQualifiedName;
-                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.OracleClientDriver).AssemblyQualifiedName;
+                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(CustomOracleClientDriver).AssemblyQualifiedName;
                     Properties[NHibernate.Cfg.Environment.Dialect] = typeof(NHibernate.Dialect.Oracle10gDialect).AssemblyQualifiedName;
                     break;
                 case DatabaseFlavour.MongoDB:
@@ -479,7 +479,7 @@ namespace N2.Persistence.NH
             ca.Property(x => x.State, cm => { });
             ca.Property(x => x.SavedBy, cm => { });
             ca.Property(x => x.ItemCount, cm => { });
-            ca.Property(x => x.VersionDataXml, cm => { cm.Type(NHibernateUtil.StringClob); cm.Length(stringLength); });
+            ca.Property(x => x.VersionDataXml, cm => { cm.Type(NHibernateUtil.AnsiString); cm.Length(stringLength); });
         }
 
         private string FormatMapping(string mappingXml)
