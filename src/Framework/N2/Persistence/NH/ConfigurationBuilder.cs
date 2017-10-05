@@ -97,6 +97,7 @@ namespace N2.Persistence.NH
 				{
 				}
 				Properties[NHibernate.Cfg.Environment.ConnectionString] = connectionString;
+<<<<<<< HEAD
 			}
             Properties[NHibernate.Cfg.Environment.ConnectionStringName] = config.ConnectionStringName;
             Properties[NHibernate.Cfg.Environment.ConnectionProvider] = "NHibernate.Connection.DriverConnectionProvider";
@@ -299,6 +300,216 @@ namespace N2.Persistence.NH
 
             var compiledMapping = mm.CompileMappingForAllExplicitlyAddedEntities();
             cfg.AddDeserializedMapping(compiledMapping, "N2");
+=======
+			}
+            Properties[NHibernate.Cfg.Environment.ConnectionStringName] = config.ConnectionStringName;
+            Properties[NHibernate.Cfg.Environment.ConnectionProvider] = "NHibernate.Connection.DriverConnectionProvider";
+            Properties[NHibernate.Cfg.Environment.Hbm2ddlKeyWords] = "none";
+
+            SetupFlavourProperties(config, connectionStrings);
+
+            bool useNonBatcher = 
+                // configured batch size <= 1
+                (batchSize.HasValue && batchSize.Value <= 1)
+                // medium trust in combination with sql client driver 
+                // causes fault: Attempt by method 'NHibernate.AdoNet.SqlClientSqlCommandSet..ctor()' to access method 'System.Data.SqlClient.SqlCommandSet..ctor()' failed.   at System.RuntimeTypeHandle.CreateInstance(RuntimeType type, Boolean publicOnly, Boolean noCheck, Boolean& canBeCached, RuntimeMethodHandleInternal& ctor, Boolean& bNeedSecurityCheck)
+                || (Utility.GetTrustLevel() <= System.Web.AspNetHostingPermissionLevel.Medium && typeof(SqlClientDriver).IsAssignableFrom(Type.GetType(Properties[Environment.ConnectionDriver])));
+            if (useNonBatcher)
+                Properties[NHibernate.Cfg.Environment.BatchStrategy] = typeof(NonBatchingBatcherFactory).AssemblyQualifiedName;
+
+            SetupCacheProperties(config);
+
+            if (config.Isolation.HasValue)
+                Properties[NHibernate.Cfg.Environment.Isolation] = config.Isolation.ToString();
+
+            foreach (NameValueConfigurationElement setting in config.HibernateProperties)
+            {
+	            Properties[setting.Name] = setting.Value;
+            }
+        }
+
+        /// <summary>
+        /// Configures the properties of each supported database flavor. You need to extend this method if you want to 
+        /// add your own database flavor. 
+        /// </summary>
+        /// <param name="config"></param>
+        /// <param name="connectionStrings"></param>
+        /// <returns></returns>
+        protected virtual DatabaseFlavour SetupFlavourProperties(DatabaseSection config, ConnectionStringsSection connectionStrings)
+        {
+            DatabaseFlavour flavour = config.Flavour;
+            if (flavour == DatabaseFlavour.AutoDetect)
+            {
+                ConnectionStringSettings css = connectionStrings.ConnectionStrings[config.ConnectionStringName];
+                if (css == null)
+                    throw new ConfigurationErrorsException("Could not find the connection string named '" + config.ConnectionStringName + "' that was defined in the n2/database configuration section. If you installed using NuGet try installing 'N2 CMS SQLite config' or configuring this connection string manually.");
+                flavour = DetectFlavor(css);
+            }
+
+            // HACK: used to support seamless text/nvarchar(max) support across databases
+            if (flavour == DatabaseFlavour.MySql)
+                stringLength = 16777215;
+
+            switch (flavour)
+            {
+                case DatabaseFlavour.SqlServer2000:
+                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.SqlClientDriver).AssemblyQualifiedName;
+                    Properties[NHibernate.Cfg.Environment.Dialect] = typeof(NHibernate.Dialect.MsSql2000Dialect).AssemblyQualifiedName;
+                    break;
+                case DatabaseFlavour.SqlServer2005:
+                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.SqlClientDriver).AssemblyQualifiedName;
+                    Properties[NHibernate.Cfg.Environment.Dialect] = typeof(NHibernate.Dialect.MsSql2005Dialect).AssemblyQualifiedName;
+                    break;
+                case DatabaseFlavour.SqlServer:
+                case DatabaseFlavour.SqlServer2008:
+                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.SqlClientDriver).AssemblyQualifiedName;
+                    Properties[NHibernate.Cfg.Environment.Dialect] = typeof(NHibernate.Dialect.MsSql2008Dialect).AssemblyQualifiedName;
+                    break;
+                case DatabaseFlavour.SqlCe3:
+                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.SqlServerCeDriver).AssemblyQualifiedName;
+                    Properties[NHibernate.Cfg.Environment.Dialect] = typeof(NHibernate.Dialect.MsSqlCeDialect).AssemblyQualifiedName;
+                    break;
+                case DatabaseFlavour.SqlCe:
+                case DatabaseFlavour.SqlCe4:
+                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.SqlServerCeDriver).AssemblyQualifiedName;
+                    Properties[NHibernate.Cfg.Environment.Dialect] = typeof(NHibernate.Dialect.MsSqlCe40Dialect).AssemblyQualifiedName;
+                    break;
+                case DatabaseFlavour.MySql:
+                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.MySqlDataDriver).AssemblyQualifiedName;
+                    Properties[NHibernate.Cfg.Environment.Dialect] = typeof(NHibernate.Dialect.MySQLDialect).AssemblyQualifiedName;
+                    break;
+				case DatabaseFlavour.Postgresql:
+					Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.NpgsqlDriver).AssemblyQualifiedName;
+					Properties[NHibernate.Cfg.Environment.Dialect] = typeof(NHibernate.Dialect.PostgreSQLDialect).AssemblyQualifiedName;
+					break;
+				case DatabaseFlavour.SqLite:
+                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.SQLite20Driver).AssemblyQualifiedName;
+                    Properties[NHibernate.Cfg.Environment.Dialect] = typeof(NHibernate.Dialect.SQLiteDialect).AssemblyQualifiedName;
+                    break;
+                case DatabaseFlavour.Generic:
+                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.OleDbDriver).AssemblyQualifiedName;
+                    Properties[NHibernate.Cfg.Environment.Dialect] = typeof(NHibernate.Dialect.GenericDialect).AssemblyQualifiedName;
+                    break;
+                case DatabaseFlavour.Jet:
+                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = "NHibernate.JetDriver.JetDriver, NHibernate.JetDriver";
+                    Properties[NHibernate.Cfg.Environment.Dialect] = "NHibernate.JetDriver.JetDialect, NHibernate.JetDriver";
+                    break;
+                case DatabaseFlavour.DB2:
+                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.OdbcDriver).AssemblyQualifiedName;
+                    Properties[NHibernate.Cfg.Environment.Dialect] = typeof(NHibernate.Dialect.DB2Dialect).AssemblyQualifiedName;
+                    break;
+                case DatabaseFlavour.Oracle9i:
+                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.OracleClientDriver).AssemblyQualifiedName;
+                    Properties[NHibernate.Cfg.Environment.Dialect] = typeof(NHibernate.Dialect.Oracle9iDialect).AssemblyQualifiedName;
+                    break;
+                case DatabaseFlavour.Oracle:
+                case DatabaseFlavour.Oracle10g:
+                    // if you have OracleOdpDriver installed
+                    // use the following line instead of the the later one (NOTICE both apply to the same property)
+                    // Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.OracleDataClientDriver).AssemblyQualifiedName;
+                    Properties[NHibernate.Cfg.Environment.ConnectionDriver] = typeof(NHibernate.Driver.OracleClientDriver).AssemblyQualifiedName;
+                    Properties[NHibernate.Cfg.Environment.Dialect] = typeof(NHibernate.Dialect.Oracle10gDialect).AssemblyQualifiedName;
+                    break;
+                case DatabaseFlavour.MongoDB:
+                    return DatabaseFlavour.MongoDB;
+                case DatabaseFlavour.Xml:
+                    return DatabaseFlavour.Xml;
+                default:
+                    throw new ConfigurationErrorsException("Couldn't determine database flavour. Please check the 'flavour' attribute of the n2/database configuration section.");
+            }
+            return flavour;
+        }
+
+        private DatabaseFlavour DetectFlavor(ConnectionStringSettings css)
+        {
+            string provider = css.ProviderName;
+
+            if (provider == "" || provider.StartsWith("System.Data.SqlClient"))
+                return DatabaseFlavour.SqlServer;
+            if (provider.StartsWith("System.Data.SQLite"))
+                return DatabaseFlavour.SqLite;
+            if (provider.StartsWith("MySql.Data.MySqlClient"))
+                return DatabaseFlavour.MySql;
+            if (provider.StartsWith("System.Data.OracleClient"))
+                return DatabaseFlavour.Oracle;
+            if (provider.StartsWith("System.Data.SqlServerCe"))
+                return DatabaseFlavour.SqlCe;
+	        if (provider.StartsWith("Npgsql"))
+		        return DatabaseFlavour.Postgresql;
+            if (css.ConnectionString.StartsWith("mongodb:"))
+                throw new ConfigurationErrorsException("Cannot auto-detect MongoDB. This needs to be configured as flavor=\"MongoDB\" in the n2/database config section");
+
+            throw new ConfigurationErrorsException("Could not auto-detect the database flavor. Please configure this explicitly in the n2/database section.");
+        }
+
+        private void SetupCacheProperties(DatabaseSection config)
+        {
+            Properties[NHibernate.Cfg.Environment.UseSecondLevelCache] = config.Caching.ToString();
+            Properties[NHibernate.Cfg.Environment.UseQueryCache] = config.Caching.ToString();
+            Properties[NHibernate.Cfg.Environment.CacheProvider] = config.CacheProviderClass;
+        }
+
+        #region Properties
+
+        public bool TryLocatingHbmResources
+        {
+            get { return tryLocatingHbmResources; }
+            set { tryLocatingHbmResources = value; }
+        }
+
+        /// <summary>Gets assemblies that will be added to the NHibernate configuration.</summary>
+        public IList<Assembly> Assemblies
+        {
+            get { return assemblies; }
+            set { assemblies = value; }
+        }
+
+        /// <summary>Gets NHibernate configuration properties.</summary>
+        public IDictionary<string, string> Properties
+        {
+            get { return properties; }
+            set { properties = value; }
+        }
+
+        #endregion
+
+        #region Methods
+
+        /// <summary>Builds a <see cref="NHibernate.Cfg.Configuration"/> by adding properties, default assemblies and generating class mappings for unmapped types.</summary>
+        /// <returns></returns>
+        public virtual NHibernate.Cfg.Configuration BuildConfiguration()
+        {           
+            NHibernate.Cfg.Configuration cfg = new NHibernate.Cfg.Configuration();
+
+            AddProperties(cfg);
+            AddDefaultMapping(cfg);
+            AddMappings(cfg);
+            AddAssemblies(cfg);
+            GenerateMappings(cfg);
+            InvokeParticipators(cfg);
+
+            return cfg;
+        }
+
+        private void InvokeParticipators(NHibernate.Cfg.Configuration cfg)
+        {
+            foreach (var participator in participators)
+                participator.AlterConfiguration(cfg);
+        }
+
+        protected virtual void AddDefaultMapping(NHibernate.Cfg.Configuration cfg)
+        {
+            ModelMapper mm = new ModelMapper();
+
+            mm.Class<ContentItem>(ContentItemCustomization);
+            mm.Class<ContentDetail>(ContentDetailCustomization);
+            mm.Class<DetailCollection>(DetailCollectionCustomization);
+            mm.Class<AuthorizedRole>(AuthorizedRoleCustomization);
+            mm.Class<ContentVersion>(ContentVersionCustomization);
+
+            var compiledMapping = mm.CompileMappingForAllExplicitlyAddedEntities();
+            cfg.AddDeserializedMapping(compiledMapping, "N2");
+>>>>>>> 129eb3f31ad02b3945c5b1548c7f9c93715f1c4d
         }
 
         /// <summary>
