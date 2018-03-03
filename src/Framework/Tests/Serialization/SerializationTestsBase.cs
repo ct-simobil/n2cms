@@ -131,7 +131,7 @@ namespace N2.Tests.Serialization
 
         protected override Importer CreateImporter(IFileSystem fs)
         {
-            return new Importer(persister, new ItemXmlReader(definitions, activator), fs);
+            return new Importer(persister, new ItemXmlReader(definitions, activator), fs, null, null);
         }
     }
 
@@ -163,7 +163,7 @@ namespace N2.Tests.Serialization
 
         protected override Importer CreateImporter(IFileSystem fs)
         {
-            return new Importer(persister, new ItemHtmlReader(), fs);
+            return new Importer(persister, new ItemHtmlReader(), fs, null, null);
         }
     }
 

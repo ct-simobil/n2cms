@@ -260,7 +260,7 @@ namespace N2.Tests
             var importer = new Importer(persister,
                 new ItemXmlReader(definitions,
                     activator),
-                new Fakes.FakeMemoryFileSystem());
+                new Fakes.FakeMemoryFileSystem(), null, null);
             var exporter = new Exporter(
                 new ItemXmlWriter(
                     definitions,

@@ -4,6 +4,7 @@ using System.IO;
 using System.Xml.XPath;
 using N2.Details;
 using N2.Edit.FileSystem;
+using N2.Persistence.Sources;
 
 namespace N2.Persistence.Serialization
 {
@@ -15,9 +16,9 @@ namespace N2.Persistence.Serialization
 
         private readonly IFileSystem fs;
 
-        public Importer(IPersister persister, IItemXmlReader reader, IFileSystem fs)
+        public Importer(IPersister persister, IItemXmlReader reader, IFileSystem fs, ContentSource source, IContentItemRepository repository)
         {
-			this.persister = persister;
+			this.persister = new ContentPersisterImport(source, repository);
 			this.reader = reader;
             this.fs = fs;
 	        //TODO: Initialize 'logger' ---> this.logger =;

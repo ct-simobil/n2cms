@@ -985,35 +985,9 @@ Public License instead of this License.
 ";
         #endregion
 
-        [Test, Ignore]
-        public void CanExportAndImportWithCompression()
-        {
-            XmlableItem item = CreateOneItem<XmlableItem>(1, "item", null);
-            item["License"] = lgplLicense;
-
-            Exporter exporter = new GZipExporter((ItemXmlWriter)CreateWriter());
-            Importer importer = new GZipImporter(null, (ItemXmlReader)CreateReader(), new FakeMemoryFileSystem());
-
-            StringBuilder sb = new StringBuilder();
-            HttpResponse hr  = new HttpResponse(new StringWriter(sb));
-            exporter.Export(item, ExportOptions.Default, hr);
-            char[] buf = new char[sb.Length];
-            sb.CopyTo(0, buf, 0, sb.Length);
-
-            Stream s = null;// = new MemoryStream((byte[])buf);
-            ContentItem readItem = importer.Read(s, "export.n2.xml.gz").RootItem;
-
-            Assert.AreEqual(item.ID, readItem.ID);
-            Assert.AreEqual(item.Title, readItem.Title);
-            Assert.AreEqual(item.Name, readItem.Name);
-            Assert.AreEqual(lgplLicense, readItem["License"]);
-        }
-
-
         private T ExportAndImport<T>(T item, ExportOptions options) where T: ContentItem
         {
-            string xml = ExportToString(item, CreateExporter(), options);
-            return (T)ImportFromString(xml, CreateImporter()).RootItem;
+            return null;
         }
 
         private static IImportRecord ImportFromString(string xml, Importer importer)
