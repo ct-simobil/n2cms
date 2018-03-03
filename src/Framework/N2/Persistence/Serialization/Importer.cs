@@ -89,6 +89,7 @@ namespace N2.Persistence.Serialization
 		            logger.Warn(ex);
 					if (record.RootItem != null)
 						record.FailedContentItems.Add(new Tuple<ContentItem, Exception>(record.RootItem, ex));
+	                throw;
 	            }
             }
             else if ((options & ImportOption.Children) == ImportOption.Children)
@@ -113,7 +114,8 @@ namespace N2.Persistence.Serialization
 
 						// ROLL BACK: Undo child.AddTo if SaveRecursive failed. That way the import can still continue successfully.
 		                if (added && destination != null && child != null)
-			                destination.Children.Remove(child); 
+			                destination.Children.Remove(child);
+	                    throw;
 	                }
                 }
             }
@@ -134,6 +136,7 @@ namespace N2.Persistence.Serialization
                     {
                         logger.Warn(ex);
                         record.FailedAttachments.Add(a);
+                        throw;
                     }
                 }
             }
